@@ -78,6 +78,12 @@ This is the place for you to write reflections:
 
 #### Reflection Publisher-1
 
+Menurut pemahaman saya, untuk kasus BambangShop kita tidak wajib membuat interface/trait `Subscriber` seperti di diagram klasik Observer, karena saat ini perilaku subscriber kita masih sangat spesifik: menyimpan `url` dan mengirim notifikasi HTTP ke endpoint tertentu. Satu `struct Subscriber` sudah cukup untuk kebutuhan sekarang. Namun, trait tetap berguna kalau ke depannya kita ingin ada banyak tipe observer dengan perilaku berbeda (misalnya subscriber HTTP, subscriber message queue, atau mock subscriber untuk testing). Jadi, kesimpulan saya: saat ini struct tunggal cukup, tapi trait lebih baik untuk extensibility jangka panjang dan agar kode lebih sesuai Open/Closed Principle.
+
+Untuk keunikan `id` pada Program dan `url` pada Subscriber, menurut saya `Vec` sebenarnya bisa dipakai kalau datanya kecil, tetapi efisiensinya kurang bagus karena perlu pencarian linear $O(n)$ untuk cek duplikasi, update, atau delete. Sementara struktur map seperti `DashMap` (atau `HashMap` pada konteks single-thread) memberi akses berbasis key rata-rata $O(1)$, sehingga lebih cocok untuk data yang punya constraint unik. Selain performa, map juga lebih "natural" secara model data karena key unik langsung dipetakan ke value. Jadi untuk kasus ini, map lebih tepat dibanding list biasa.
+
+Terkait thread safety, `Singleton` dan `DashMap` menurut saya menyelesaikan masalah yang berbeda. Singleton hanya mengatur bahwa instance globalnya satu, tapi tidak otomatis membuat akses datanya aman saat multithread. Sebaliknya, `DashMap` fokus pada concurrent access yang aman dan efisien. Di Rust, karena server Rocket bisa melayani request secara paralel, kita tetap butuh struktur data thread-safe untuk state global seperti daftar subscriber. Artinya, kita bisa saja menerapkan pola singleton untuk "satu sumber data", tetapi isi penyimpanannya tetap perlu mekanisme sinkronisasi (`DashMap`, `RwLock<HashMap<...>>`, dll). Jadi singleton saja tidak cukup menggantikan kebutuhan `DashMap`.
+
 #### Reflection Publisher-2
 
 #### Reflection Publisher-3
