@@ -48,22 +48,22 @@ You can install Postman via this website: https://www.postman.com/downloads/
     (You might want to use `cargo check` if you only need to verify your work without running the app.)
 
 ## Mandatory Checklists (Publisher)
--   [ ] Clone https://gitlab.com/ichlaffterlalu/bambangshop to a new repository.
+-   [x] Clone https://gitlab.com/ichlaffterlalu/bambangshop to a new repository.
 -   **STAGE 1: Implement models and repositories**
-    -   [ ] Commit: `Create Subscriber model struct.`
-    -   [ ] Commit: `Create Notification model struct.`
-    -   [ ] Commit: `Create Subscriber database and Subscriber repository struct skeleton.`
-    -   [ ] Commit: `Implement add function in Subscriber repository.`
-    -   [ ] Commit: `Implement list_all function in Subscriber repository.`
-    -   [ ] Commit: `Implement delete function in Subscriber repository.`
-    -   [ ] Write answers of your learning module's "Reflection Publisher-1" questions in this README.
+    -   [x] Commit: `Create Subscriber model struct.`
+    -   [x] Commit: `Create Notification model struct.`
+    -   [x] Commit: `Create Subscriber database and Subscriber repository struct skeleton.`
+    -   [x] Commit: `Implement add function in Subscriber repository.`
+    -   [x] Commit: `Implement list_all function in Subscriber repository.`
+    -   [x] Commit: `Implement delete function in Subscriber repository.`
+    -   [x] Write answers of your learning module's "Reflection Publisher-1" questions in this README.
 -   **STAGE 2: Implement services and controllers**
-    -   [ ] Commit: `Create Notification service struct skeleton.`
-    -   [ ] Commit: `Implement subscribe function in Notification service.`
-    -   [ ] Commit: `Implement subscribe function in Notification controller.`
-    -   [ ] Commit: `Implement unsubscribe function in Notification service.`
-    -   [ ] Commit: `Implement unsubscribe function in Notification controller.`
-    -   [ ] Write answers of your learning module's "Reflection Publisher-2" questions in this README.
+    -   [x] Commit: `Create Notification service struct skeleton.`
+    -   [x] Commit: `Implement subscribe function in Notification service.`
+    -   [x] Commit: `Implement subscribe function in Notification controller.`
+    -   [x] Commit: `Implement unsubscribe function in Notification service.`
+    -   [x] Commit: `Implement unsubscribe function in Notification controller.`
+    -   [x] Write answers of your learning module's "Reflection Publisher-2" questions in this README.
 -   **STAGE 3: Implement notification mechanism**
     -   [ ] Commit: `Implement update method in Subscriber model to send notification HTTP requests.`
     -   [ ] Commit: `Implement notify function in Notification service to notify each Subscriber.`
@@ -85,5 +85,18 @@ Untuk keunikan `id` pada Program dan `url` pada Subscriber, menurut saya `Vec` s
 Terkait thread safety, `Singleton` dan `DashMap` menurut saya menyelesaikan masalah yang berbeda. Singleton hanya mengatur bahwa instance globalnya satu, tapi tidak otomatis membuat akses datanya aman saat multithread. Sebaliknya, `DashMap` fokus pada concurrent access yang aman dan efisien. Di Rust, karena server Rocket bisa melayani request secara paralel, kita tetap butuh struktur data thread-safe untuk state global seperti daftar subscriber. Artinya, kita bisa saja menerapkan pola singleton untuk "satu sumber data", tetapi isi penyimpanannya tetap perlu mekanisme sinkronisasi (`DashMap`, `RwLock<HashMap<...>>`, dll). Jadi singleton saja tidak cukup menggantikan kebutuhan `DashMap`.
 
 #### Reflection Publisher-2
+
+Menurut saya, pemisahan `Service` dan `Repository` dari `Model` diperlukan supaya tanggung jawab tiap komponen jelas (Single Responsibility Principle). `Repository` fokus ke urusan akses data (simpan, ambil, hapus), sedangkan `Service` fokus ke business logic/use case aplikasi. Dengan pemisahan ini, model tetap menjadi representasi data/domain object yang relatif bersih. Dampaknya cukup terasa: kode lebih mudah diuji (service bisa di-test dengan mock repository), lebih mudah di-maintain, dan perubahan di layer data (misalnya pindah dari in-memory ke database sungguhan) tidak terlalu merusak layer bisnis/controller.
+
+Kalau hanya pakai Model, kemungkinan besar setiap model akan jadi "gemuk" karena mencampur data, business rule, sekaligus detail penyimpanan. Dalam konteks `Program`, `Subscriber`, dan `Notification`, interaksinya bisa saling tarik-menarik: `Program` harus tahu cara ambil subscriber dan kirim notifikasi, `Subscriber` mungkin ikut tahu detail format notifikasi, `Notification` bisa ikut menangani penyimpanan/lookup juga. Akhirnya coupling antarmodel naik, dependency jadi berputar, dan perubahan kecil di satu model bisa memicu perubahan berantai di model lain. Menurut saya ini bikin kompleksitas meningkat cepat, terutama saat fitur bertambah.
+
+Saya sudah eksplor Postman lebih jauh, dan tool ini sangat membantu untuk ngetes endpoint secara cepat tanpa bikin client manual. Untuk pekerjaan sekarang, Postman memudahkan saya cek skenario subscribe, unsubscribe, create/delete product, lalu verifikasi apakah response status/body sudah sesuai ekspektasi. Fitur yang menurut saya paling kepakai dan menarik untuk project ke depan:
+1. Collection untuk mengelompokkan endpoint per modul/fitur.
+2. Environment variables supaya base URL, token, atau parameter bisa diganti tanpa edit request satu-satu.
+3. Tests tab (script) untuk assertion otomatis setelah request, jadi bisa dipakai sebagai regression check ringan.
+4. Collection Runner untuk menjalankan banyak request berurutan.
+5. Export/Share collection agar satu tim punya standar pengujian API yang sama.
+
+Menurut saya, kombinasi fitur-fitur ini cukup powerful untuk bantu workflow QA dasar di group project, bahkan sebelum punya automated integration test yang lebih formal di pipeline CI/CD.
 
 #### Reflection Publisher-3
