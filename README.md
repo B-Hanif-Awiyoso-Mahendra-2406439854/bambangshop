@@ -100,3 +100,20 @@ Saya sudah eksplor Postman lebih jauh, dan tool ini sangat membantu untuk ngetes
 Menurut saya, kombinasi fitur-fitur ini cukup powerful untuk bantu workflow QA dasar di group project, bahkan sebelum punya automated integration test yang lebih formal di pipeline CI/CD.
 
 #### Reflection Publisher-3
+
+Pada tutorial ini, menurut saya kita memakai variasi **Push model**. Alasannya, publisher (BambangShop) langsung mengirim data notifikasi ke subscriber lewat HTTP POST saat event terjadi (misalnya create/delete product). Jadi subscriber tidak perlu request dulu untuk ambil update; informasi didorong dari publisher ke subscriber.
+
+Kalau dibayangkan kita memakai **Pull model**, ada beberapa kelebihan dan kekurangan.
+Kelebihan:
+1. Payload notifikasi awal bisa lebih ringan, karena publisher cukup kirim sinyal "ada update" lalu subscriber yang mengambil detail jika perlu.
+2. Subscriber punya kontrol kapan dan data apa yang mau diambil, jadi lebih fleksibel untuk kebutuhan masing-masing client.
+
+Kekurangan:
+1. Kompleksitas sistem naik karena harus menyediakan endpoint tambahan untuk "fetch detail update".
+2. Potensi latency bertambah karena jadi dua langkah (dapat sinyal dulu, lalu fetch data), bukan satu kali kirim selesai.
+3. Traffic request bisa lebih banyak saat subscriber banyak dan sering polling/pull.
+4. Konsistensi data bisa lebih tricky kalau data berubah lagi sebelum subscriber selesai pull.
+
+Menurut saya, untuk kasus tutorial yang fokusnya notifikasi sederhana berbasis event, Push lebih straightforward dan mudah dipahami.
+
+Jika kita tidak memakai multi-threading di proses notifikasi, program tetap bisa jalan, tapi performanya kemungkinan menurun. Pengiriman notifikasi ke subscriber akan cenderung serial (satu per satu), sehingga total response time endpoint yang memicu notify bisa ikut lebih lama, apalagi kalau ada subscriber yang lambat atau timeout. Efeknya throughput turun dan user bisa merasakan API lebih "lemot" saat traffic naik. Selain itu, satu subscriber bermasalah dapat menjadi bottleneck untuk alur notifikasi lainnya. Jadi, tanpa multi-threading implementasinya memang lebih sederhana, tetapi kurang scalable untuk skenario real-world yang concurrent.
